@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Voice Calendar">
+<title>Voice to Calendar</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f5f5f5; --bg3: #ececec;
+    --text: #1a1a1a; --text2: #666; --text3: #999;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+    --radius: 12px; --radius-sm: 8px;
+    --blue: #378ADD; --blue-bg: #E6F1FB; --blue-text: #0C447C;
+    --green: #1D9E75; --green-bg: #E1F5EE; --green-text: #085041;
+    --amber: #BA7517; --amber-bg: #FAEEDA; --amber-text: #633806;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1e; --bg2: #2c2c2e; --bg3: #3a3a3c;
+      --text: #f0f0f0; --text2: #aaa; --text3: #666;
+      --border: rgba(255,255,255,0.12); --border2: rgba(255,255,255,0.22);
+      --blue-bg: #0c2a45; --blue-text: #85B7EB;
+      --green-bg: #063323; --green-text: #5DCAA5;
+      --amber-bg: #3a2206; --amber-text: #EF9F27;
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; }
+  .app { max-width: 480px; margin: 0 auto; padding: 16px 16px 40px; }
+
+  .top-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-top: 8px; }
+  .app-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--blue-bg); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .app-title { font-size: 18px; font-weight: 600; color: var(--text); }
+  .app-sub { font-size: 12px; color: var(--text2); }
+
+  .section-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+
+  .key-card { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 20px; border: 1px solid var(--border); }
+  .key-row { display: flex; gap: 8px; align-items: center; }
+  .key-row input { flex: 1; background: var(--bg); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 9px 12px; font-size: 14px; color: var(--text); outline: none; -webkit-appearance: none; }
+  .key-row input:focus { border-color: var(--blue); }
+  .key-row button { background: var(--blue); color: white; border: none; border-radius: var(--radius-sm); padding: 9px 14px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+  .key-hint { font-size: 11px; color: var(--text3); margin-top: 6px; }
+  .key-ok { color: var(--green); font-weight: 600; }
+
+  .account-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .acc-btn { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius); border: 1.5px solid var(--border); background: var(--bg); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: all 0.15s; text-align: left; width: 100%; }
+  .acc-btn.active-p { border-color: var(--blue); background: var(--blue-bg); }
+  .acc-btn.active-w { border-color: var(--green); background: var(--green-bg); }
+  .acc-btn.active-b { border-color: var(--amber); background: var(--amber-bg); }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .av-p { background: #B5D4F4; color: #0C447C; }
+  .av-w { background: #9FE1CB; color: #085041; }
+  .av-b { background: #FAC775; color: #633806; }
+  .acc-info { flex: 1; min-width: 0; }
+  .acc-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .acc-email { font-size: 12px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .acc-tag { font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600; flex-shrink: 0; }
+  .tag-p { background: var(--blue-bg); color: var(--blue-text); }
+  .tag-w { background: var(--green-bg); color: var(--green-text); }
+  .tag-b { background: var(--amber-bg); color: var(--amber-text); }
+  .check-mark { font-size: 18px; flex-shrink: 0; }
+  .chk-p { color: var(--blue); }
+  .chk-w { color: var(--green); }
+  .chk-b { color: var(--amber); }
+
+  .active-strip { display: flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: var(--radius-sm); background: var(--bg2); border: 1px solid var(--border); margin-bottom: 20px; font-size: 13px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-p { background: var(--blue); }
+  .dot-w { background: var(--green); }
+  .dot-b { background: var(--amber); }
+  .strip-label { color: var(--text2); }
+  .strip-email { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .mic-section { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .mic-btn { width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--border2); background: var(--bg2); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 34px; -webkit-tap-highlight-color: transparent; transition: all 0.15s; user-select: none; }
+  .mic-btn:active { transform: scale(0.94); }
+  .mic-btn.rec-p { border-color: var(--blue); background: var(--blue-bg); animation: pulse 1.1s infinite; }
+  .mic-btn.rec-w { border-color: var(--green); background: var(--green-bg); animation: pulse 1.1s infinite; }
+  .mic-btn.rec-b { border-color: var(--amber); background: var(--amber-bg); animation: pulse 1.1s infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+  .mic-status { font-size: 13px; color: var(--text2); text-align: center; min-height: 20px; }
+
+  .transcript { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 15px; color: var(--text); min-height: 60px; line-height: 1.6; margin-bottom: 12px; -webkit-user-select: text; user-select: text; }
+  .transcript.empty { color: var(--text3); font-style: italic; }
+
+  .btn-analyze { width: 100%; padding: 13px; font-size: 15px; font-weight: 600; border-radius: var(--radius); border: 1.5px solid var(--border2); background: var(--bg); color: var(--text); cursor: pointer; -webkit-tap-highlight-color: transparent; margin-bottom: 16px; }
+  .btn-analyze:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-analyze:not(:disabled):active { transform: scale(0.98); }
+
+  .result-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; }
+  .result-card h3 { font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+  .result-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .ev-row { display: flex; gap: 10px; padding: 5px 0; font-size: 14px; align-items: flex-start; }
+  .ev-ic { font-size: 17px; flex-shrink: 0; margin-top: 1px; color: var(--text2); }
+  .ev-lbl { color: var(--text2); min-width: 60px; flex-shrink: 0; font-size: 13px; }
+  .ev-val { color: var(--text); flex: 1; font-size: 13px; }
+  .sep { height: 1px; background: var(--border); margin: 3px 0; }
+
+  .btn-gcal { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px; font-size: 14px; font-weight: 700; border-radius: var(--radius); border: 2px solid; cursor: pointer; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+  .btn-gcal:active { opacity: 0.8; }
+  .gcal-p { border-color: var(--blue); color: var(--blue-text); background: var(--blue-bg); }
+  .gcal-w { border-color: var(--green); color: var(--green-text); background: var(--green-bg); }
+  .gcal-b { border-color: var(--amber); color: var(--amber-text); background: var(--amber-bg); }
+
+  .examples { margin-top: 20px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .chip { font-size: 12px; padding: 5px 11px; border: 1px solid var(--border2); border-radius: 20px; cursor: pointer; color: var(--text2); background: var(--bg2); -webkit-tap-highlight-color: transparent; }
+  .chip:active { background: var(--bg3); }
+
+  .dots span { animation: blink 1.2s infinite; }
+  .dots span:nth-child(2) { animation-delay: .2s; }
+  .dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%,80%,100%{opacity:.2} 40%{opacity:1} }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="top-bar">
+    <div class="app-icon">🎙️</div>
+    <div>
+      <div class="app-title">Voice to Calendar</div>
+      <div class="app-sub">สั่งงานด้วยเสียง → Google Calendar</div>
+    </div>
+  </div>
+
+  <div class="key-card">
+    <div class="section-label">Anthropic API Key</div>
+    <div class="key-row">
+      <input type="password" id="api-key" placeholder="sk-ant-..." autocomplete="off" />
+      <button onclick="saveKey()">บันทึก</button>
+    </div>
+    <div class="key-hint">ใช้สำหรับ Claude วิเคราะห์คำสั่ง — เก็บเฉพาะ session นี้ <span class="key-ok hidden" id="key-ok">✓ พร้อม</span></div>
+  </div>
+
+  <div class="section-label">เลือกบัญชี Calendar</div>
+  <div class="account-list">
+    <button class="acc-btn active-p" id="btn-p" onclick="switchAcc('p')">
+      <div class="avatar av-p">SJ</div>
+      <div class="acc-info">
+        <div class="acc-name">ส่วนตัว</div>
+        <div class="acc-email">surangj@gmail.com</div>
+      </div>
+      <span class="acc-tag tag-p">ส่วนตัว</span>
+      <span class="check-mark chk-p" id="chk-p">✓</span>
+    </button>
+    <button class="acc-btn" id="btn-w" onclick="switchAcc('w')">
+      <div class="avatar av-w">SG</div>
+      <div class="acc-info">
+        <div class="acc-name">งาน</div>
+        <div class="acc-email">surang@gensignresearch.com</div>
+      </div>
+      <span class="acc-tag tag-w">งาน</span>
+      <span class="check-mark chk-w hidden" id="chk-w">✓</span>
+    </button>
+    <button class="acc-btn" id="btn-b" onclick="switchAcc('b')">
+      <div class="avatar av-b">PS</div>
+      <div class="acc-info">
+        <div class="acc-name">ธุรกิจส่วนตัว</div>
+        <div class="acc-email">pharmsolutic@gmail.com</div>
+      </div>
+      <span class="acc-tag tag-b">ธุรกิจ</span>
+      <span class="check-mark chk-b hidden" id="chk-b">✓</span>
+    </button>
+  </div>
+
+  <div class="active-strip">
+    <div class="dot dot-p" id="act-dot"></div>
+    <span class="strip-label">กำลังใช้:</span>
+    <span class="strip-email" id="act-email">surangj@gmail.com</span>
+  </div>
+
+  <div class="mic-section">
+    <div class="mic-btn" id="mic-btn" onclick="toggleRec()" role="button" aria-label="บันทึกเสียง">🎙️</div>
+    <div class="mic-status" id="mic-status">แตะเพื่อบันทึกเสียง</div>
+  </div>
+
+  <div class="transcript empty" id="transcript" contenteditable="false" onclick="enableType()">
+    พูดคำสั่ง หรือแตะที่นี่เพื่อพิมพ์...
+  </div>
+
+  <button class="btn-analyze" id="btn-analyze" onclick="doAnalyze()" disabled>
+    🤖 วิเคราะห์ด้วย Claude
+  </button>
+
+  <div id="result-wrap" class="hidden">
+    <div class="result-card">
+      <div class="result-head">
+        <h3>กิจกรรมที่จะสร้าง</h3>
+        <span class="acc-tag" id="res-badge">นัดหมาย</span>
+      </div>
+      <div class="ev-row"><span class="ev-ic">📌</span><span class="ev-lbl">หัวข้อ</span><span class="ev-val" id="r-title">—</span></div>
+      <div class="sep"></div>
+      <div class="ev-row"><span class="ev-ic">🗓️</span><span class="ev-lbl">วัน/เวลา</span><span class="ev-val" id="r-dt">—</span></div>
+      <div class="sep"></div>
+      <div class="ev-row"><span class="ev-ic">⏱️</span><span class="ev-lbl">ระยะเวลา</span><span class="ev-val" id="r-dur">—</span></div>
+      <div class="sep"></div>
+      <div class="ev-row"><span class="ev-ic">📍</span><span class="ev-lbl">สถานที่</span><span class="ev-val" id="r-loc">—</span></div>
+      <div class="sep"></div>
+      <div class="ev-row"><span class="ev-ic">📝</span><span class="ev-lbl">หมายเหตุ</span><span class="ev-val" id="r-note">—</span></div>
+    </div>
+    <a id="gcal-link" class="btn-gcal gcal-p" href="#" target="_blank" rel="noopener">
+      📅 <span id="gcal-lbl">เปิดใน Google Calendar</span>
+    </a>
+  </div>
+
+  <div class="examples">
+    <div class="section-label">ตัวอย่างคำสั่ง</div>
+    <div class="chips">
+      <span class="chip" onclick="setEx(this.textContent)">ประชุมทีมพรุ่งนี้บ่ายสอง ห้อง A</span>
+      <span class="chip" onclick="setEx(this.textContent)">นัดหมอวันศุกร์ 10 โมงเช้า</span>
+      <span class="chip" onclick="setEx(this.textContent)">ส่งรายงานลูกค้า วันจันทร์หน้า</span>
+      <span class="chip" onclick="setEx(this.textContent)">ประชุม Pharmsolutic วันพุธ 2 โมงบ่าย</span>
+      <span class="chip" onclick="setEx(this.textContent)">วิ่งออกกำลังกายทุกเสาร์ 6 โมงเช้า</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const ACCS = {
+  p: { email:'surangj@gmail.com', label:'ส่วนตัว', activeCls:'active-p', dotCls:'dot-p', micCls:'rec-p', gcalCls:'gcal-p', tagCls:'tag-p' },
+  w: { email:'surang@gensignresearch.com', label:'งาน', activeCls:'active-w', dotCls:'dot-w', micCls:'rec-w', gcalCls:'gcal-w', tagCls:'tag-w' },
+  b: { email:'pharmsolutic@gmail.com', label:'ธุรกิจ', activeCls:'active-b', dotCls:'dot-b', micCls:'rec-b', gcalCls:'gcal-b', tagCls:'tag-b' }
+};
+
+let curAcc = 'p', apiKey = '', recognition = null, isRec = false, transcript = '';
+
+function saveKey() {
+  const v = document.getElementById('api-key').value.trim();
+  if (v.startsWith('sk-ant-')) {
+    apiKey = v;
+    document.getElementById('api-key').value = '••••••••••••••••';
+    document.getElementById('key-ok').classList.remove('hidden');
+    setStatus('✓ พร้อมใช้งาน');
+  } else {
+    alert('API Key ไม่ถูกต้อง (ต้องขึ้นต้นด้วย sk-ant-)');
+  }
+}
+
+function switchAcc(acc) {
+  curAcc = acc;
+  ['p','w','b'].forEach(k => {
+    const a = ACCS[k];
+    const btn = document.getElementById('btn-'+k);
+    const chk = document.getElementById('chk-'+k);
+    btn.className = 'acc-btn' + (k===acc ? ' '+a.activeCls : '');
+    k===acc ? chk.classList.remove('hidden') : chk.classList.add('hidden');
+  });
+  const a = ACCS[acc];
+  document.getElementById('act-dot').className = 'dot ' + a.dotCls;
+  document.getElementById('act-email').textContent = a.email;
+  const mic = document.getElementById('mic-btn');
+  mic.className = 'mic-btn' + (isRec ? ' '+a.micCls : '');
+}
+
+function toggleRec() {
+  const hasSR = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+  if (!hasSR) { enableType(); return; }
+  isRec ? stopRec() : startRec();
+}
+
+function startRec() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'th-TH';
+  recognition.interimResults = true;
+  recognition.continuous = false;
+
+  recognition.onstart = () => {
+    isRec = true;
+    document.getElementById('mic-btn').className = 'mic-btn ' + ACCS[curAcc].micCls;
+    document.getElementById('mic-btn').textContent = '⏹️';
+    setStatus('กำลังฟัง... แตะอีกครั้งเพื่อหยุด');
+    const box = document.getElementById('transcript');
+    box.className = 'transcript'; box.textContent = '';
+    box.contentEditable = 'false';
+  };
+  recognition.onresult = e => {
+    let final = '', interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      e.results[i].isFinal ? final += t : interim += t;
+    }
+    transcript = final || interim;
+    document.getElementById('transcript').textContent = transcript;
+    if (final) document.getElementById('btn-analyze').disabled = false;
+  };
+  recognition.onerror = e => { setStatus('ข้อผิดพลาด: ' + e.error); stopRec(); };
+  recognition.onend = () => stopRec();
+  recognition.start();
+}
+
+function stopRec() {
+  isRec = false;
+  if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
+  document.getElementById('mic-btn').className = 'mic-btn';
+  document.getElementById('mic-btn').textContent = '🎙️';
+  const has = document.getElementById('transcript').textContent.trim().length > 0;
+  setStatus(has ? 'บันทึกเสร็จ — กดวิเคราะห์' : 'แตะเพื่อบันทึกเสียง');
+  if (has) document.getElementById('btn-analyze').disabled = false;
+}
+
+function enableType() {
+  const box = document.getElementById('transcript');
+  if (box.contentEditable === 'true') return;
+  box.className = 'transcript'; box.contentEditable = 'true';
+  box.textContent = ''; box.focus();
+  box.oninput = () => {
+    transcript = box.textContent;
+    document.getElementById('btn-analyze').disabled = !transcript.trim();
+  };
+  setStatus('พิมพ์คำสั่งในช่องด้านบน');
+}
+
+function setEx(t) {
+  transcript = t;
+  const box = document.getElementById('transcript');
+  box.className = 'transcript'; box.contentEditable = 'false';
+  box.textContent = t;
+  document.getElementById('btn-analyze').disabled = false;
+}
+
+function setStatus(msg) { document.getElementById('mic-status').textContent = msg; }
+
+async function doAnalyze() {
+  if (!transcript.trim()) return;
+  if (!apiKey) { alert('กรุณาใส่ Anthropic API Key ก่อน'); return; }
+  const btn = document.getElementById('btn-analyze');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="dots">กำลังวิเคราะห์<span>.</span><span>.</span><span>.</span></span>';
+
+  const acc = ACCS[curAcc];
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('th-TH', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  const timeStr = now.toLocaleTimeString('th-TH');
+
+  const sys = `คุณวิเคราะห์คำสั่งภาษาไทยเพื่อสร้าง Google Calendar event สำหรับบัญชี ${acc.email} (${acc.label})
+วันนี้: ${dateStr} เวลา ${timeStr}
+ตอบเป็น JSON เท่านั้น ไม่มี markdown backtick:
+{"title":"ชื่อกิจกรรม","type":"event|task|reminder","startDate":"YYYY-MM-DD","startTime":"HH:MM","endTime":"HH:MM","duration":"ระยะเวลา","location":"สถานที่หรือ null","notes":"หมายเหตุหรือ null","recurrence":"ความถี่หรือ null"}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: sys, messages: [{ role: 'user', content: transcript }] })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const raw = data.content?.[0]?.text || '{}';
+    let ev;
+    try { ev = JSON.parse(raw.replace(/```json|```/g,'').trim()); }
+    catch(e) { throw new Error('วิเคราะห์ไม่ได้: ' + raw.slice(0,80)); }
+    showResult(ev, acc);
+  } catch(err) {
+    setStatus('เกิดข้อผิดพลาด: ' + err.message);
+    alert('ข้อผิดพลาด: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🤖 วิเคราะห์ด้วย Claude';
+  }
+}
+
+function showResult(ev, acc) {
+  document.getElementById('result-wrap').classList.remove('hidden');
+  const typeMap = { event:'นัดหมาย', task:'งาน', reminder:'แจ้งเตือน' };
+  const badge = document.getElementById('res-badge');
+  badge.textContent = typeMap[ev.type] || 'นัดหมาย';
+  badge.className = 'acc-tag ' + acc.tagCls;
+
+  document.getElementById('r-title').textContent = ev.title || '—';
+  const ds = ev.startDate ? new Date(ev.startDate+'T00:00:00').toLocaleDateString('th-TH',{weekday:'short',month:'short',day:'numeric',year:'numeric'}) : '—';
+  const ts = ev.startTime ? (ev.startTime + (ev.endTime ? ' – '+ev.endTime : '')) : '';
+  document.getElementById('r-dt').textContent = ds + (ts ? '  ' + ts : '');
+  document.getElementById('r-dur').textContent = ev.duration || ev.recurrence || '—';
+  document.getElementById('r-loc').textContent = ev.location || '—';
+  document.getElementById('r-note').textContent = ev.notes || '—';
+
+  const link = document.getElementById('gcal-link');
+  link.className = 'btn-gcal ' + acc.gcalCls;
+  link.href = buildGCalUrl(ev, acc.email);
+  document.getElementById('gcal-lbl').textContent = 'เปิดใน Google Calendar (' + acc.label + ')';
+  document.getElementById('result-wrap').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function buildGCalUrl(ev, email) {
+  let url = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
+  url += '&text=' + encodeURIComponent(ev.title || 'กิจกรรม');
+  if (ev.startDate && ev.startTime) {
+    const fmt = s => s.replace(/-/g,'') + 'T' + s.replace(':','') + '00';
+    const s = ev.startDate.replace(/-/g,'') + 'T' + ev.startTime.replace(':','') + '00';
+    const e = ev.startDate.replace(/-/g,'') + 'T' + (ev.endTime || ev.startTime).replace(':','') + '00';
+    url += '&dates=' + s + '/' + e;
+  }
+  if (ev.location) url += '&location=' + encodeURIComponent(ev.location);
+  if (ev.notes) url += '&details=' + encodeURIComponent(ev.notes);
+  url += '&src=' + encodeURIComponent(email);
+  return url;
+}
+</script>
+</body>
+</html>
